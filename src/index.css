@@ -11,3 +11,29 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
     monospace;
 }
+
+.search .MuiGrid-container {
+  
+  
+  align-items: center;
+  
+}
+
+
+.search .MuiButton-outlined {
+  
+  
+ margin: 20px;
+  
+}
+
+
+.search .MuiFormControl-marginNormal{
+  
+  width: 80%;
+}
+
+img {
+  
+  max-width: 100%;
+}

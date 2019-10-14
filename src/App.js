@@ -32,7 +32,13 @@ export default class Movies extends Component {
     searchResults: {},
     query: '',
     movieHeading: '',
-    showModal: false
+    showModal: false,
+    accessGranted: false,
+    authToken: '',
+    authenticated: false,
+    userToken : '',
+    session_id: ''
+   
     
   };
   
@@ -40,7 +46,8 @@ export default class Movies extends Component {
   componentDidMount() {
       
       Modal.setAppElement('#auth-modal');
- 
+      
+
    
     fetch("https://api.themoviedb.org/3/movie/latest?api_key="+ API_KEY)
       .then(res => res.json())
@@ -125,9 +132,166 @@ export default class Movies extends Component {
     this.setState({ showModal: false });
   }
   
-  
-  render() {
+//   request  auth token
+
+  requestFavToken = (event) => {
       
+      event.preventDefault();
+      
+     
+      
+    const currentLocation = window.location.search ;
+    console.log(currentLocation);
+
+     if (currentLocation.indexOf('approved=true') > -1 ) {
+         
+         
+         const captured = /request_token=([^&]+)/.exec(currentLocation)[1]; // Value is in [1] ('384' in our case)
+         const  result = captured ? captured : '';
+         
+         if(result !== ''){
+             
+            fetch("https://api.themoviedb.org/3/authentication/session/new?api_key="+ API_KEY,{
+                
+                method: 'POST',
+                body:
+                    JSON.stringify({  request_token: result}),
+                    
+                headers: {
+                  'Content-Type': 'application/json'
+                }
+                             
+            })
+              .then(res => res.json())
+              .then(res => this.setState({ session_id: res.session_id}))
+              .catch(function(error) {
+                 console.log('There has been a problem with your fetch operation: ', 
+                 error.message);
+                });
+                     
+             
+         }
+         
+        this.addToFavourite();
+      
+         
+         
+     }else{
+         
+     fetch("https://api.themoviedb.org/3/authentication/token/new?api_key="+ API_KEY)
+      .then(res => res.json())
+      .then(res => this.setState({ authToken: res.request_token}))
+      .catch(() => this.setState({ hasErrors: true }));
+      
+      if(!this.state.hasErrors){
+          
+          
+          this.setState({ showModal: true })
+     
+          
+      }
+         
+     }
+     
+        
+  }
+  
+
+//   close token
+
+
+//   request  watchlist token
+
+  requestWatchToken = (event) => {
+      
+      event.preventDefault();
+      
+     
+      
+    const currentLocation = window.location.search ;
+    console.log(currentLocation);
+
+     if (currentLocation.indexOf('approved=true') > -1 ) {
+         
+         
+         const captured = /request_token=([^&]+)/.exec(currentLocation)[1]; // Value is in [1] ('384' in our case)
+         const  result = captured ? captured : '';
+         
+         if(result !== ''){
+             
+            fetch("https://api.themoviedb.org/3/authentication/session/new?api_key="+ API_KEY,{
+                
+                method: 'POST',
+                body:
+                    JSON.stringify({  request_token: result}),
+                    
+                headers: {
+                  'Content-Type': 'application/json'
+                }
+                             
+            })
+              .then(res => res.json())
+              .then(res => this.setState({ session_id: res.session_id}))
+              .catch(function(error) {
+                 console.log('There has been a problem with your fetch operation: ', 
+                 error.message);
+                });
+                     
+             
+         }
+         
+        this.addToFavourite();
+      
+         
+         
+     }else{
+         
+     fetch("https://api.themoviedb.org/3/authentication/token/new?api_key="+ API_KEY)
+      .then(res => res.json())
+      .then(res => this.setState({ authToken: res.request_token}))
+      .catch(() => this.setState({ hasErrors: true }));
+      
+      if(!this.state.hasErrors){
+          
+          
+          this.setState({ showModal: true })
+     
+          
+      }
+         
+     }
+     
+        
+  }
+  
+
+//   close token
+addToFavourite = () =>{
+    
+    console.log(this.state.session_id);
+    
+}
+
+addToWatchlist = () =>{
+    
+    console.log(this.state.session_id);
+    
+}
+
+// authorize  
+
+grantAccess =  () => {
+    const URL = document.URL;
+    window.location = "https://www.themoviedb.org/authenticate/"+ this.state.authToken+ "?redirect_to="+URL;
+ 
+    
+}
+
+// render method
+
+  render() {
+     
+    
      const movies = this.state.searchResults;
      const moviesList = [];
      
@@ -206,8 +370,8 @@ export default class Movies extends Component {
               <h3>Access required to add movies to favourites and watchlist.</h3>
               <p>You will be redirected to MovieDb website</p>
                 <Button 
-            onClick={this.handleOpenModal}
-           variant="outlined"  href="#contained-buttons" id = "signup-btn">
+           onClick={this.grantAccess}
+           variant="outlined"   id = "signup-btn">
            
               Grant Access
               </Button>
@@ -259,8 +423,8 @@ export default class Movies extends Component {
                  <Grid item xs = {6}>
                    
                    <Button 
-            onClick={this.handleOpenModal}
-           variant="outlined"  href="#contained-buttons" id = "signup-btn">
+             onClick={this.requestFavToken}
+           variant="outlined"  id = "signup-btn">
            
               Add to Favourite
               </Button>
@@ -269,8 +433,8 @@ export default class Movies extends Component {
                  <Grid item xs = {6}>
                  
                  <Button 
-                    onClick={this.handleOpenModal}
-                   variant="outlined"  href="#contained-buttons" id = "signup-btn">
+                     onClick={this.requestWatchToken}
+                   variant="outlined"  id = "signup-btn">
                    
                    Add to Watchlist
                   </Button>
@@ -334,7 +498,7 @@ export default class Movies extends Component {
                <Grid item xs = {6}>
                
                 <Button 
-            onClick={this.handleOpenModal}
+             onClick={this.requestWatchToken}
            variant="outlined"  href="#contained-buttons" id = "signup-btn">
            
               Add to Favourite
@@ -346,7 +510,7 @@ export default class Movies extends Component {
                
                
                  <Button 
-                    onClick={this.handleOpenModal}
+                     onClick={this.requestFavToken}
                    variant="outlined"  href="#contained-buttons" id = "signup-btn">
                    
                    Add to Watchlist
@@ -357,13 +521,13 @@ export default class Movies extends Component {
              </Grid>
              
           </Grid>
-          
+          {/*
             <Grid item xs = {12} md = {4}>
             
               <img alt = "" src={`https://image.tmdb.org/t/p/w500/${this.state.latestMovies.backdrop_path}`}   />
               
             </Grid>
-            
+            */}
             <p>{this.state.latestMovies.overview}</p>
             <Grid container>
             

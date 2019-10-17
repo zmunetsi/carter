@@ -6,9 +6,11 @@ import Grid from '@material-ui/core/Grid';
 import TextField from '@material-ui/core/TextField';
 import Button from '@material-ui/core/Button';
 import Modal from 'react-modal';
+import axios from "axios";
 
 
 const API_KEY = "eb2baf82f4897034f5e27180289f6624";
+let SESSION_ID = "";
 
 const customStyles = {
   content : {
@@ -132,152 +134,226 @@ export default class Movies extends Component {
     this.setState({ showModal: false });
   }
   
-//   request  auth token
+// ////////////////////////////////////////////////////////////////////////  request  auth token
 
   requestFavToken = (event) => {
       
-      event.preventDefault();
+          event.preventDefault();
       
-     
+     let mov_id = event.target.value;
       
     const currentLocation = window.location.search ;
     console.log(currentLocation);
 
-     if (currentLocation.indexOf('approved=true') > -1 ) {
+      
+      if (SESSION_ID !== ''){
+          
+          this.addToFavourite(mov_id);
+          
+      }else{
+          
+          
+          
+             if (currentLocation.indexOf('approved=true') > -1 ) {
          
          
          const captured = /request_token=([^&]+)/.exec(currentLocation)[1]; // Value is in [1] ('384' in our case)
          const  result = captured ? captured : '';
          
-         if(result !== ''){
-             
-            fetch("https://api.themoviedb.org/3/authentication/session/new?api_key="+ API_KEY,{
+ 
+       
+          axios({
+              method: 'post',
+              url: "https://api.themoviedb.org/3/authentication/session/new?api_key="+ API_KEY,
+              headers: {}, 
+              data: {
+                request_token: result, // This is the body part
+              }
+            }).then( (response) => {
                 
-                method: 'POST',
-                body:
-                    JSON.stringify({  request_token: result}),
-                    
-                headers: {
-                  'Content-Type': 'application/json'
-                }
-                             
-            })
-              .then(res => res.json())
-              .then(res => this.setState({ session_id: res.session_id}))
-              .catch(function(error) {
-                 console.log('There has been a problem with your fetch operation: ', 
-                 error.message);
-                });
-                     
-             
-         }
-         
-        this.addToFavourite();
-      
-         
+               SESSION_ID = response.data.session_id;
+  
+            
+          })
+          .catch( (error) => {
+            console.log(error);
+          })
+
+    
          
      }else{
          
-     fetch("https://api.themoviedb.org/3/authentication/token/new?api_key="+ API_KEY)
-      .then(res => res.json())
-      .then(res => this.setState({ authToken: res.request_token}))
-      .catch(() => this.setState({ hasErrors: true }));
-      
-      if(!this.state.hasErrors){
+        
+        axios.get("https://api.themoviedb.org/3/authentication/token/new?api_key="+ API_KEY)
+           .then( (response) => {
+               
+               
+              this.setState({ authToken: response.data.request_token})
+              this.setState({ showModal: true });
+           
+          })
           
-          
-          this.setState({ showModal: true })
+          .catch( (error) => {
+              
+              this.setState({ hasErrors: true });
+            // handle error
+            console.log(error);
+          });
+   
+     }
+
      
+  }
           
       }
-         
-     }
-     
-        
-  }
-  
-
-//   close token
-
-
-//   request  watchlist token
+      
+      
+// ////////////////////////////////////////////////////////////////////////  request  auth token
 
   requestWatchToken = (event) => {
       
-      event.preventDefault();
+          event.preventDefault();
       
-     
+     let mov_id = event.target.value;
       
     const currentLocation = window.location.search ;
     console.log(currentLocation);
 
-     if (currentLocation.indexOf('approved=true') > -1 ) {
+      
+      if (SESSION_ID !== ''){
+          
+          this.addToWatchlist(mov_id);
+          
+      }else{
+          
+          
+          
+             if (currentLocation.indexOf('approved=true') > -1 ) {
          
          
          const captured = /request_token=([^&]+)/.exec(currentLocation)[1]; // Value is in [1] ('384' in our case)
          const  result = captured ? captured : '';
          
-         if(result !== ''){
-             
-            fetch("https://api.themoviedb.org/3/authentication/session/new?api_key="+ API_KEY,{
+ 
+       
+          axios({
+              method: 'post',
+              url: "https://api.themoviedb.org/3/authentication/session/new?api_key="+ API_KEY,
+              headers: {}, 
+              data: {
+                request_token: result, // This is the body part
+              }
+            }).then( (response) => {
                 
-                method: 'POST',
-                body:
-                    JSON.stringify({  request_token: result}),
-                    
-                headers: {
-                  'Content-Type': 'application/json'
-                }
-                             
-            })
-              .then(res => res.json())
-              .then(res => this.setState({ session_id: res.session_id}))
-              .catch(function(error) {
-                 console.log('There has been a problem with your fetch operation: ', 
-                 error.message);
-                });
-                     
-             
-         }
-         
-        this.addToFavourite();
-      
-         
+               SESSION_ID = response.data.session_id;
+  
+            
+          })
+          .catch( (error) => {
+            console.log(error);
+          })
+
+    
          
      }else{
          
-     fetch("https://api.themoviedb.org/3/authentication/token/new?api_key="+ API_KEY)
-      .then(res => res.json())
-      .then(res => this.setState({ authToken: res.request_token}))
-      .catch(() => this.setState({ hasErrors: true }));
-      
-      if(!this.state.hasErrors){
+        
+        axios.get("https://api.themoviedb.org/3/authentication/token/new?api_key="+ API_KEY)
+           .then( (response) => {
+               
+               
+              this.setState({ authToken: response.data.request_token})
+              this.setState({ showModal: true });
+           
+          })
           
-          
-          this.setState({ showModal: true })
+          .catch( (error) => {
+              
+              this.setState({ hasErrors: true });
+            // handle error
+            console.log(error);
+          });
+   
+     }
+
      
+  }
           
       }
-         
-     }
-     
-        
-  }
-  
+      
+      
+//////////////////////////////////////////////
 
-//   close token
-addToFavourite = () =>{
+
+
+
+addToFavourite = (mov_id) =>{
     
-    console.log(this.state.session_id);
+        axios({
+              method: 'post',
+              url: "https://api.themoviedb.org/3/account/{account_id}/favorite?api_key="+ API_KEY+"&session_id="+ SESSION_ID,
+              headers: {}, 
+              data: {
+                  
+                  media_type: "movie",
+                  media_id: mov_id,
+                  favorite: true
+             
+              }
+              
+            }).then( (response) => {
+                
+               console.log(response)
+                
+              
+            
+          })
+          .catch( (error) => {
+            console.log(error);
+          }).then(() => {
+              
+              console.log("done");
+              
+          })
+
+
+}
+
+
+///////////////////////////////////////////////////////////////
+
+addToWatchlist = (mov_id) =>{
+    
+      axios({
+              method: 'post',
+              url: "https://api.themoviedb.org/3/account/{account_id}/watchlist?api_key="+ API_KEY+"&session_id="+ SESSION_ID,
+              headers: {}, 
+              data: {
+                  
+                  media_type: "movie",
+                  media_id: mov_id,
+                  watchlist: true
+             
+              }
+              
+            }).then( (response) => {
+                
+               console.log(response)
+                
+              
+            
+          })
+          .catch( (error) => {
+            console.log(error);
+          }).then(() => {
+              
+              console.log("done");
+              
+          })
     
 }
 
-addToWatchlist = () =>{
-    
-    console.log(this.state.session_id);
-    
-}
-
+//////////////////////////////////////////////////
 // authorize  
 
 grantAccess =  () => {
@@ -422,22 +498,24 @@ grantAccess =  () => {
                  
                  <Grid item xs = {6}>
                    
-                   <Button 
-             onClick={this.requestFavToken}
-           variant="outlined"  id = "signup-btn">
+                   <button 
+                    value={movie.id} 
+                  onClick={this.requestFavToken}
+                  variant="outlined"  id = "signup-btn">
            
               Add to Favourite
-              </Button>
+              </button>
                  </Grid>
                  
                  <Grid item xs = {6}>
                  
-                 <Button 
-                     onClick={this.requestWatchToken}
+                 <button 
+                    value={movie.id} 
+                    onClick={this.requestWatchToken}
                    variant="outlined"  id = "signup-btn">
                    
                    Add to Watchlist
-                  </Button>
+                  </button>
                  </Grid>
                 
                 </Grid>
@@ -497,24 +575,27 @@ grantAccess =  () => {
              
                <Grid item xs = {6}>
                
-                <Button 
-             onClick={this.requestWatchToken}
-           variant="outlined"  href="#contained-buttons" id = "signup-btn">
+                <button 
+                value={this.state.latestMovies.id} 
+             onClick={this.requestFavToken}
+             
+           variant="outlined"  id = "signup-btn">
            
               Add to Favourite
-              </Button>
+              </button>
              
                </Grid>
              
                <Grid item xs = {6}>
                
                
-                 <Button 
-                     onClick={this.requestFavToken}
-                   variant="outlined"  href="#contained-buttons" id = "signup-btn">
+                 <button
+                 value={this.state.latestMovies.id} 
+                     onClick={this.requestWatchToken}
+                   variant="outlined"  id = "signup-btn">
                    
                    Add to Watchlist
-                  </Button>
+                  </button>
                   
                </Grid>
              

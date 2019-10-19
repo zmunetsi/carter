@@ -10,7 +10,7 @@ import axios from "axios";
 
 
 const API_KEY = "eb2baf82f4897034f5e27180289f6624";
-let SESSION_ID = "";
+
 
 const customStyles = {
   content : {
@@ -22,16 +22,148 @@ const customStyles = {
     transform             : 'translate(-50%, -50%)'
   }
 }
+//////////////////////////
 
+class Tabs extends Component{
+    
+constructor(props) {
+    
+    super(props);
+    
+    this.state = {
+        
+        myFavList: {},
+        myWatchList: {},
+        hasErrors:false
+        
+    };
+    
+  
+    
+    }
+    
+
+    getWatchList = (event)=> {
+        
+         event.preventDefault();
+   
+        
+          axios.get("https://api.themoviedb.org/3/account/{account_id}/watchlist/movies?api_key="+ API_KEY+"&sort_by=created_at.desc&session_id="+ this.props.session_id)
+       .then( (response) => {
+               
+               
+             this.setState({
+                 
+                 myWatchList: response.data.results,
+             
+                 
+             });
+             
+             this.sendWatchData();
+              
+           
+          }).catch( (error) => {
+              
+              this.setState({ hasErrors: true });
+            // handle error
+            console.log(error);
+          });
+   
+        
+    }
+    ////////////////////////////////////////////////
+    
+    getFavList = (event)=> {
+        
+        event.preventDefault();
+  
+        
+          axios.get("https://api.themoviedb.org/3/account/{account_id}/favorite/movies?api_key="+ API_KEY+"&sort_by=created_at.desc&session_id="+ this.props.session_id)
+         .then( (response) => {
+               
+               
+             this.setState({
+                 myFavList: response.data.results,
+        
+                 
+             });
+              
+              this.sendFavData();
+              
+          }).catch( (error) => {
+              
+              this.setState({ hasErrors: true });
+            // handle error
+            console.log(error);
+          });
+            
+       
+    }
+    
+    /////////////////////////////
+    
+    
+    
+    sendWatchData = () => {
+        
+         this.props.getwatchmovies(this.state.myWatchList);
+         
+    }
+    
+      sendFavData = () => {
+          
+         this.props.getfavmovies(this.state.myFavList);
+         
+    }
+    /////////////////////////////
+    
+     render() {
+         
+        //   console.log(this.state.myWatchList)
+        //   console.log(this.state.myFavList);
+           
+      
+     if(this.props.logged){
+         
+         return(
+             <div className = "tabs">
+             <button
+             onClick={this.getWatchList}
+             userwatchlist = {this.state.myWatchList}
+             >My Watchlist</button>
+             
+             <button
+             onClick={this.getFavList}
+             userfavlist = {this.state.myFavList}
+             >My Favorites</button>
+             </div>
+             )
+     }else{
+         return false;
+     }
+     
+     
+     }
+     
+    
+   
+}
+
+
+//////////////////////
 
 
 export default class Movies extends Component {
  
- 
-  state = {
+ constructor(props) {
+  super(props);
+
+  
+ this.state = {
     hasErrors: false,
+    successMessage: '',
     latestMovies: {},
-    searchResults: {},
+    movies: {},
     query: '',
     movieHeading: '',
     showModal: false,
@@ -39,10 +171,15 @@ export default class Movies extends Component {
     authToken: '',
     authenticated: false,
     userToken : '',
-    session_id: ''
+    session_id: '',
+    loggedIn: false,
+    action: '',
+
    
     
   };
+}
+
   
 
   componentDidMount() {
@@ -82,205 +219,116 @@ export default class Movies extends Component {
    
    fetch("https://api.themoviedb.org/3/search/movie?api_key="+ API_KEY +"&query="+queryString)
       .then(res => res.json())
-      .then(res => this.setState({ searchResults: res.results }))
+      .then(res => this.setState({ 
+          
+          movies: res.results ,
+          action: "searchmovies",
+         movieHeading: "Search Results"
+          
+      }))
       .catch(() => this.setState({ hasErrors: true }));
       
-      if(this.state.hasErrors) {
-          
-          this.setState({
-               
-           movieHeading : "Something gone wrong, sorry its our fault."
-              
-              
-          })
-          
-          
-          
-      }else{
-          
-      if(this.state.searchResults.results){
-          
-           this.setState({
-               
-            movieHeading : "No movies meeting your criteria found."
-              
-              
-          })
-          
-          
-      }else {
-          
-           this.setState({
-              
-              movieHeading : "Search Results."
-             
-          })
-          
-          
-          
-      }
-   
-   
-      }
+
   }
 
 
- handleOpenModal =  () => {
-     
-    this.setState({ showModal: true });
-  }
-  
-  handleCloseModal = () => {
-    this.setState({ showModal: false });
-  }
-  
 // ////////////////////////////////////////////////////////////////////////  request  auth token
 
   requestFavToken = (event) => {
       
-          event.preventDefault();
-      
-     let mov_id = event.target.value;
-      
-    const currentLocation = window.location.search ;
-    console.log(currentLocation);
+     event.stopPropagation(); 
 
-      
-      if (SESSION_ID !== ''){
+    event.preventDefault();
+    
+    const mov_id = event.target.value;
+    
+    // console.log(this.state.loggedIn);
+    // console.log(this.state.session_id);
+    
+    ////////////////get token if not logged in
+    
+    
+    if(!this.state.loggedIn){
+     
+      axios.get("https://api.themoviedb.org/3/authentication/token/new?api_key="+ API_KEY)
+           .then( (response) => {
+               
+               
+             this.setState({
+                 authToken: response.data.request_token,
+                 showModal: true
+                 
+             });
+              
+           
+          }).catch( (error) => {
+              
+              this.setState({ hasErrors: true });
+            // handle error
+            console.log(error);
+          });
+            
+          
+      }else{
+          
+          
+          ///////////////add movie to fav list
           
           this.addToFavourite(mov_id);
           
-      }else{
-          
-          
-          
-             if (currentLocation.indexOf('approved=true') > -1 ) {
-         
-         
-         const captured = /request_token=([^&]+)/.exec(currentLocation)[1]; // Value is in [1] ('384' in our case)
-         const  result = captured ? captured : '';
-         
- 
-       
-          axios({
-              method: 'post',
-              url: "https://api.themoviedb.org/3/authentication/session/new?api_key="+ API_KEY,
-              headers: {}, 
-              data: {
-                request_token: result, // This is the body part
-              }
-            }).then( (response) => {
-                
-               SESSION_ID = response.data.session_id;
-  
-            
-          })
-          .catch( (error) => {
-            console.log(error);
-          })
-
-    
-         
-     }else{
-         
-        
-        axios.get("https://api.themoviedb.org/3/authentication/token/new?api_key="+ API_KEY)
-           .then( (response) => {
-               
-               
-              this.setState({ authToken: response.data.request_token})
-              this.setState({ showModal: true });
-           
-          })
-          
-          .catch( (error) => {
-              
-              this.setState({ hasErrors: true });
-            // handle error
-            console.log(error);
-          });
-   
-     }
-
-     
-  }
           
       }
       
-      
-// ////////////////////////////////////////////////////////////////////////  request  auth token
-
+  }
+     ////////////////////////////////////////////////////////////
+     
+     
+     
   requestWatchToken = (event) => {
       
-          event.preventDefault();
-      
-     let mov_id = event.target.value;
-      
-    const currentLocation = window.location.search ;
-    console.log(currentLocation);
-
-      
-      if (SESSION_ID !== ''){
-          
-          this.addToWatchlist(mov_id);
-          
-      }else{
-          
-          
-          
-             if (currentLocation.indexOf('approved=true') > -1 ) {
-         
-         
-         const captured = /request_token=([^&]+)/.exec(currentLocation)[1]; // Value is in [1] ('384' in our case)
-         const  result = captured ? captured : '';
-         
- 
+   
+       event.preventDefault();
+       event.stopPropagation(); 
        
-          axios({
-              method: 'post',
-              url: "https://api.themoviedb.org/3/authentication/session/new?api_key="+ API_KEY,
-              headers: {}, 
-              data: {
-                request_token: result, // This is the body part
-              }
-            }).then( (response) => {
-                
-               SESSION_ID = response.data.session_id;
-  
-            
-          })
-          .catch( (error) => {
-            console.log(error);
-          })
-
-    
-         
-     }else{
-         
+       const mov_id = event.target.value;
+       
+    //   console.log(this.state.loggedIn);
+    //   console.log(this.state.session_id);
+       
+    if(!this.state.loggedIn){
         
-        axios.get("https://api.themoviedb.org/3/authentication/token/new?api_key="+ API_KEY)
+      axios.get("https://api.themoviedb.org/3/authentication/token/new?api_key="+ API_KEY)
            .then( (response) => {
                
                
-              this.setState({ authToken: response.data.request_token})
-              this.setState({ showModal: true });
+             this.setState({
+                 authToken: response.data.request_token,
+                 showModal: true
+                 
+                 
+             });
+            
+              
            
-          })
-          
-          .catch( (error) => {
+          }).catch( (error) => {
               
               this.setState({ hasErrors: true });
             // handle error
             console.log(error);
           });
-   
-     }
-
-     
-  }
+          
+          
+      }else{
+          
+          
+          ///////////////add movie to watchlist
+          this.addToWatchlist(mov_id);
+          
           
       }
-      
+     
+  }
+
       
 //////////////////////////////////////////////
 
@@ -288,6 +336,8 @@ export default class Movies extends Component {
 
 
 addToFavourite = (mov_id) =>{
+    
+       const SESSION_ID = this.state.session_id;
     
         axios({
               method: 'post',
@@ -303,7 +353,9 @@ addToFavourite = (mov_id) =>{
               
             }).then( (response) => {
                 
-               console.log(response)
+               this.setState({
+                   successMessage: "New movie added to favorites"
+               })
                 
               
             
@@ -314,7 +366,7 @@ addToFavourite = (mov_id) =>{
               
               console.log("done");
               
-          })
+          });
 
 
 }
@@ -323,6 +375,8 @@ addToFavourite = (mov_id) =>{
 ///////////////////////////////////////////////////////////////
 
 addToWatchlist = (mov_id) =>{
+    
+    const SESSION_ID = this.state.session_id;
     
       axios({
               method: 'post',
@@ -338,7 +392,9 @@ addToWatchlist = (mov_id) =>{
               
             }).then( (response) => {
                 
-               console.log(response)
+                this.setState({
+                   successMessage: "New movie added to watchlist"
+               })
                 
               
             
@@ -352,25 +408,92 @@ addToWatchlist = (mov_id) =>{
           })
     
 }
+// ///////////////////////////////////////////
 
+watchcallbackFunction = (childData) => {
+    
+      this.setState({
+          movies: childData,
+          action: "getwatchmovies",
+          movieHeading: "Watchlist",
+
+          
+          
+      })
+      
+      
+}
+
+favcallbackFunction = (childData) => {
+    
+      this.setState({
+          movies: childData,
+          action: "getfavmovies",
+          movieHeading: "Favorites"
+          
+      });
+     
+}
 //////////////////////////////////////////////////
 // authorize  
 
 grantAccess =  () => {
     const URL = document.URL;
     window.location = "https://www.themoviedb.org/authenticate/"+ this.state.authToken+ "?redirect_to="+URL;
- 
+   
     
 }
 
 // render method
 
   render() {
-     
-    
-     const movies = this.state.searchResults;
+
      const moviesList = [];
+     const currentLocation = window.location.search;
+     const loggedIn = this.state.loggedIn-''
+     const movies = this.state.movies;
      
+ 
+     
+     //console.log(this.state.userfavmovies);
+     //console.log(this.state.userwatchmovies);
+     
+
+     
+     if (!loggedIn && currentLocation.indexOf('approved=true') > -1 ) {
+         
+         const captured = /request_token=([^&]+)/.exec(currentLocation)[1]; 
+         const  result = captured ? captured : '';
+         
+          if(result !== ''){
+         
+             axios({
+              method: 'post',
+              url: "https://api.themoviedb.org/3/authentication/session/new?api_key="+ API_KEY,
+              headers: {}, 
+              data: {
+                request_token: result, // This is the body part
+              }
+            }).then( (response) => {
+                
+                this.setState({
+                    
+                    loggedIn: true,
+                    session_id: response.data.session_id
+                });
+  
+  
+            
+          })
+          .catch( (error) => {
+            console.log(error);
+          });
+
+         
+     }
+    
+     }
+    
      
      for(var i = 0; i < movies.length; i++) {
      var obj = movies[i];
@@ -421,7 +544,13 @@ grantAccess =  () => {
          
          <Grid item xs = {8} md = {3}>
         
+           <Tabs
            
+            getfavmovies = {this.favcallbackFunction}
+            getwatchmovies = {this.watchcallbackFunction}
+           session_id = {this.state.session_id}
+           logged = {this.state.loggedIn}/>
+          
          </Grid>
         </Grid>
         
@@ -545,7 +674,7 @@ grantAccess =  () => {
            
             
          </div>
-              )
+              );
                  
              })}
            
